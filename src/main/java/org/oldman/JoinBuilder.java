@@ -50,7 +50,7 @@ public class JoinBuilder extends BaseQueryPart implements CanBuildQuery {
 
     private WithPart joinWith(FieldInfo collection, JoinType joinType) {
         join(collection, joinType, FetchType.NONE);
-        return new WithPart(this);
+        return new WithPart();
     }
 
     private void join(FieldInfo collection, JoinType joinType, FetchType fetchType) {
@@ -90,7 +90,7 @@ public class JoinBuilder extends BaseQueryPart implements CanBuildQuery {
             throw new IllegalArgumentException("Join table cannot be null");
         }
 
-        return new OnPart(this, new OnPart.TempJoinInfo(joinTable, joinType, fetchType));
+        return new OnPart(new TempJoinInfo(joinTable, joinType, fetchType));
     }
 
     public WhereBuilder.WherePart where(FieldInfo field, Operator operator, String parameter) {
@@ -132,24 +132,17 @@ public class JoinBuilder extends BaseQueryPart implements CanBuildQuery {
         joinClauses.getLast().addCondition(condition);
     }
 
-    public final static class WithPart {
-        private final JoinBuilder builder;
-        private WithPart(JoinBuilder builder) {
-            this.builder = builder;
-        }
-
+    public final class WithPart {
         public AndOr with(FieldInfo field, Operator operator, String parameter) {
-            builder.addCondition(new JoinWhereCondition(ConditionType.WITH, field, operator, parameter));
-            return new AndOr(builder);
+            addCondition(new JoinWhereCondition(ConditionType.WITH, field, operator, parameter));
+            return new AndOr(JoinBuilder.this);
         }
     }
 
-    public final static class OnPart {
-        private final JoinBuilder builder;
+    public final class OnPart {
         private final TempJoinInfo tempInfo;
 
-        private OnPart(JoinBuilder builder, TempJoinInfo tempInfo) {
-            this.builder = builder;
+        private OnPart(TempJoinInfo tempInfo) {
             this.tempInfo = tempInfo;
         }
 
@@ -157,32 +150,29 @@ public class JoinBuilder extends BaseQueryPart implements CanBuildQuery {
             if (firstField == null || secondField == null) {
                 throw new IllegalArgumentException("Join fields cant be null");
             }
-            if (firstField == secondField) {
-                throw new IllegalArgumentException("Fields cant be equal");
-            }
 
-            builder.join(
+            join(
                     JoinDirector.createJoinByTwoTables(firstField,secondField, tempInfo.tableInfo),
                     tempInfo.joinType,
                     tempInfo.fetchType
             );
-            return new AndOr(builder);
-        }
-
-        private final static class TempJoinInfo {
-            private final TableInfo tableInfo;
-            private final JoinType joinType;
-            private final FetchType fetchType;
-
-            private TempJoinInfo(TableInfo tableInfo, JoinType joinType, FetchType fetchType) {
-                this.tableInfo = tableInfo;
-                this.joinType = joinType;
-                this.fetchType = fetchType;
-            }
+            return new AndOr(JoinBuilder.this);
         }
     }
 
-    public final static class AndOr extends JoinBuilder {
+    private static final class TempJoinInfo {
+        private final TableInfo tableInfo;
+        private final JoinType joinType;
+        private final FetchType fetchType;
+
+        private TempJoinInfo(TableInfo tableInfo, JoinType joinType, FetchType fetchType) {
+            this.tableInfo = tableInfo;
+            this.joinType = joinType;
+            this.fetchType = fetchType;
+        }
+    }
+
+    public final class AndOr extends JoinBuilder {
         private AndOr(JoinBuilder builder) {
             super(builder.queryGraph, builder.joinClauses);
         }

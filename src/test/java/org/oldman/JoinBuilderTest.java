@@ -42,17 +42,6 @@ public class JoinBuilderTest {
     }
 
     @Test
-    public void itShouldFailIfJoinFieldsAreEqual() {
-        JoinBuilder builder = new JoinBuilder(queryGraph);
-        FieldInfo joinField = FieldInfo.withAlias("t.field", "f");
-        TableInfo joinTable = new TableInfo("Table", "t");
-
-        assertThrows(IllegalArgumentException.class, () -> builder
-                .join(joinTable)
-                .on(joinField, joinField));
-    }
-
-    @Test
     public void itShouldSaveJoinByTablePart() {
         JoinBuilder builder = new JoinBuilder(queryGraph);
         FieldInfo joinField = FieldInfo.withAlias("t.field", "f");
